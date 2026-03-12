@@ -1,0 +1,2 @@
+[console_scripts]
+md-to-speech = md_to_speech.cli:main

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "md-to-speech"
+version = "0.1.0"
+description = "Convert markdown course content into speech with Kokoro TTS."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "kokoro>=0.9.4",
+    "lameenc>=1.7.0",
+]
+
+[project.scripts]
+md-to-speech = "md_to_speech.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

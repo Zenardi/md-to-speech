@@ -1,0 +1,98 @@
+Metadata-Version: 2.4
+Name: md-to-speech
+Version: 0.1.0
+Summary: Convert markdown course content into speech with Kokoro TTS.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: kokoro>=0.9.4
+
+# md-to-speech
+
+`md-to-speech` is a local CLI app that reads a Markdown file, turns the content into narration-friendly text, and writes a `.wav` audio file to disk using Kokoro TTS.
+
+## What it does
+
+- Reads Markdown course content from disk
+- Converts headings, paragraphs, lists, links, and quotes into speech text
+- Skips fenced code blocks by default, with an option to read them literally
+- Splits long content into stable chunks
+- Synthesizes audio locally with `hexgrad/Kokoro-82M`
+- Optionally rewrites chunks with a local Ollama model before synthesis
+- Saves the final merged `.wav` file to disk
+
+## Requirements
+
+- Python `3.11+`
+- A working local Kokoro setup via the `kokoro` Python package
+- `espeak-ng` installed on the machine
+
+On macOS:
+
+```bash
+brew install espeak-ng
+```
+
+Install the project:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -e .
+```
+
+## Usage
+
+Generate a WAV file from Markdown:
+
+```bash
+md-to-speech course.md --output course.wav
+```
+
+Use a different Kokoro voice:
+
+```bash
+md-to-speech course.md --output course.wav --voice af_bella
+```
+
+Read fenced code blocks instead of skipping them:
+
+```bash
+md-to-speech course.md --output course.wav --code-block-behavior read
+```
+
+Rewrite each chunk with a local Ollama model before TTS:
+
+```bash
+md-to-speech course.md \
+  --output course.wav \
+  --rewrite-with-ollama \
+  --ollama-model llama3.2
+```
+
+## CLI options
+
+```text
+md-to-speech INPUT.md [--output OUTPUT.wav]
+                       [--voice af_heart]
+                       [--lang-code a]
+                       [--speed 1.0]
+                       [--max-chars 1200]
+                       [--code-block-behavior skip|read]
+                       [--rewrite-with-ollama]
+                       [--ollama-model MODEL]
+                       [--ollama-host URL]
+```
+
+## Notes
+
+- The app defaults to direct Markdown-to-speech.
+- Ollama is optional and only used when `--rewrite-with-ollama` is enabled.
+- The current MVP always writes `.wav` output.
+- The default Kokoro model target is `hexgrad/Kokoro-82M`.
+
+## Run tests
+
+```bash
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+```
