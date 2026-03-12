@@ -34,6 +34,41 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+## Docker
+
+The included `Dockerfile` uses a two-stage build on top of a [Chainguard `wolfi-base`](https://images.chainguard.dev/directory/image/wolfi-base/overview) image — minimal, rootless, and security-hardened.
+
+**Build the image:**
+
+```bash
+docker build -t md-to-speech .
+```
+
+**First run — download the model (~327 MB):**
+
+```bash
+docker run --rm \
+  -v "$HOME/.cache/huggingface":/cache \
+  -v "$(pwd)":/data \
+  md-to-speech /data/course.md --output /data/course.mp3
+```
+
+**All subsequent runs — fully offline:**
+
+```bash
+docker run --rm \
+  -v "$HOME/.cache/huggingface":/cache \
+  -v "$(pwd)":/data \
+  md-to-speech /data/course.md --output /data/course.mp3 --offline
+```
+
+| Volume | Purpose |
+|--------|---------|
+| `/cache` | HuggingFace model cache — mount once, reuse forever |
+| `/data` | Your input `.md` files and output `.wav`/`.mp3` files |
+
+The container runs as a non-root user (`uid 65532`) by default.
+
 ## Usage
 
 Generate a WAV file from Markdown:

@@ -1,0 +1,20 @@
+# Python virtual environment
+.venv/
+
+# Byte-compiled Python files
+__pycache__/
+*.py[cod]
+
+# Installed package metadata (editable install artefacts)
+src/*.egg-info/
+
+# Generated audio output files
+*.wav
+*.mp3
+
+# macOS artefacts
+.DS_Store
+
+# Editor directories
+.idea/
+.vscode/
