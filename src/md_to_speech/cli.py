@@ -69,6 +69,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Base URL for the local Ollama server.",
     )
     parser.add_argument(
+        "--image-pause-seconds",
+        type=float,
+        default=1.0,
+        help="Pause duration inserted for each Markdown image. Default: 1.0",
+    )
+    parser.add_argument(
         "--mp3-bitrate",
         type=int,
         default=192,
@@ -107,6 +113,7 @@ def main(argv: list[str] | None = None) -> int:
         voice=args.voice,
         lang_code=args.lang_code,
         speed=args.speed,
+        image_pause_seconds=args.image_pause_seconds,
         mp3_bitrate=args.mp3_bitrate,
         offline=args.offline,
         quiet=args.quiet,

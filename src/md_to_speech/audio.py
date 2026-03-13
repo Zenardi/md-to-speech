@@ -80,6 +80,24 @@ def concatenate_audio(chunks: list[PcmAudio]) -> PcmAudio:
     )
 
 
+def silence_audio(
+    *,
+    sample_rate: int,
+    duration_seconds: float,
+    channels: int = 1,
+    sample_width: int = 2,
+) -> PcmAudio:
+    if duration_seconds < 0:
+        raise ValidationError("duration_seconds must be greater than or equal to zero.")
+    frame_count = int(round(sample_rate * duration_seconds))
+    return PcmAudio(
+        sample_rate=sample_rate,
+        channels=channels,
+        sample_width=sample_width,
+        frames=b"\x00" * (frame_count * channels * sample_width),
+    )
+
+
 def write_audio(audio: PcmAudio, output_path: Path, *, mp3_bitrate: int = 192) -> None:
     """Write audio to disk; format is inferred from the output path extension."""
     suffix = output_path.suffix.lower()

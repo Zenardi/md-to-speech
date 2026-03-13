@@ -14,6 +14,7 @@ LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 INLINE_CODE_RE = re.compile(r"`([^`]+)`")
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 MULTISPACE_RE = re.compile(r"\s+")
+IMAGE_PAUSE_MARKER = "[[md-to-speech-image-pause]]"
 
 
 @dataclass(frozen=True)
@@ -114,7 +115,7 @@ def extract_text_blocks(markdown_text: str, options: MarkdownParseOptions) -> li
 
 def normalize_inline_markdown(text: str) -> str:
     normalized = text.strip()
-    normalized = IMAGE_RE.sub(lambda match: match.group(1), normalized)
+    normalized = IMAGE_RE.sub(f" {IMAGE_PAUSE_MARKER} ", normalized)
     normalized = LINK_RE.sub(lambda match: match.group(1), normalized)
     normalized = INLINE_CODE_RE.sub(lambda match: match.group(1), normalized)
     normalized = HTML_TAG_RE.sub(" ", normalized)

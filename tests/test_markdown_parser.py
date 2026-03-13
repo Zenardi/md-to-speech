@@ -1,6 +1,6 @@
 import unittest
 
-from md_to_speech.markdown_parser import MarkdownParseOptions, extract_text_blocks
+from md_to_speech.markdown_parser import IMAGE_PAUSE_MARKER, MarkdownParseOptions, extract_text_blocks
 
 
 class MarkdownParserTests(unittest.TestCase):
@@ -41,6 +41,23 @@ const total = 3;
             [
                 "Section. Sample.",
                 "Code example. const total = 3;",
+            ],
+        )
+
+    def test_replaces_images_with_pause_markers_instead_of_alt_text(self) -> None:
+        markdown = """Before the figure.
+
+![Projected detections](figure.png)
+
+Figure 1. Projected detections in bird's-eye view.
+"""
+        blocks = extract_text_blocks(markdown, MarkdownParseOptions())
+        self.assertEqual(
+            blocks,
+            [
+                "Before the figure.",
+                IMAGE_PAUSE_MARKER,
+                "Figure 1. Projected detections in bird's-eye view.",
             ],
         )
 

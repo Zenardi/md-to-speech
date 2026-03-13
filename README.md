@@ -6,6 +6,7 @@
 
 - Reads Markdown course content from disk
 - Converts headings, paragraphs, lists, links, and quotes into speech text
+- Replaces Markdown images with a short configurable pause instead of reading alt text
 - Skips fenced code blocks by default, with an option to read them literally
 - Splits long content into stable chunks
 - Synthesizes audio locally with `hexgrad/Kokoro-82M`
@@ -89,6 +90,12 @@ Read fenced code blocks instead of skipping them:
 md-to-speech course.md --output course.wav --code-block-behavior read
 ```
 
+Use a longer pause when Markdown includes diagrams or figures:
+
+```bash
+md-to-speech course.md --output course.wav --image-pause-seconds 1.5
+```
+
 Rewrite each chunk with a local Ollama model before TTS:
 
 ```bash
@@ -158,6 +165,7 @@ Ollama must be running locally before you start. The default model is `llama3.2`
 | `--voice` | `af_heart` | Kokoro voice name (see [Available voices](#available-voices)) |
 | `--lang-code` | `a` | Language code matching the chosen voice (`a`=American English) |
 | `--speed` | `1.0` | Speech speed multiplier — `0.5` is slower, `2.0` is faster |
+| `--image-pause-seconds` | `1.0` | Silence inserted for each Markdown image reference. Use `0` to disable image pauses. |
 | `--max-chars` | `1200` | Maximum characters per narration chunk |
 | `--code-block-behavior` | `skip` | What to do with fenced code blocks: `skip` ignores them, `read` speaks them literally |
 | `--quiet` | *(off)* | Suppress all progress output — only errors are printed |
@@ -280,6 +288,7 @@ Requires `pip install misaki[zh]`.
 ## Notes
 
 - The app defaults to direct Markdown-to-speech.
+- Markdown image references insert silence instead of reading image alt text, which helps avoid duplicated figure captions in narration.
 - Ollama is optional and only used when `--rewrite-with-ollama` is enabled.
 - The current MVP always writes `.wav` output.
 - The default Kokoro model target is `hexgrad/Kokoro-82M`.

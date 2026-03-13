@@ -5,11 +5,15 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from md_to_speech.audio import PcmAudio, concatenate_audio, write_audio
+from md_to_speech.audio import PcmAudio, concatenate_audio, silence_audio, write_audio
 from md_to_speech.errors import ValidationError
-from md_to_speech.markdown_parser import MarkdownParseOptions, extract_text_blocks
+from md_to_speech.markdown_parser import (
+    IMAGE_PAUSE_MARKER,
+    MarkdownParseOptions,
+    extract_text_blocks,
+)
 from md_to_speech.ollama import OllamaRewriteOptions, rewrite_text_for_speech
-from md_to_speech.text_prep import TextChunk, prepare_text_chunks
+from md_to_speech.text_prep import prepare_text_chunks
 from md_to_speech.tts import DEFAULT_KOKORO_MODEL, KokoroConfig, KokoroSynthesizer, SpeechSynthesizer
 
 
@@ -30,6 +34,7 @@ class AppConfig:
     voice: str = "af_heart"
     lang_code: str = "a"
     speed: float = 1.0
+    image_pause_seconds: float = 1.0
     mp3_bitrate: int = 192
     offline: bool = False
     quiet: bool = False
@@ -40,6 +45,12 @@ class GenerationResult:
     output_path: Path
     chunk_count: int
     duration_seconds: float
+
+
+@dataclass(frozen=True)
+class NarrationStep:
+    kind: str
+    text: str = ""
 
 
 def synthesize_markdown_file(
@@ -57,8 +68,9 @@ def synthesize_markdown_file(
         input_text,
         MarkdownParseOptions(code_block_behavior=config.code_block_behavior),
     )
-    chunks = prepare_text_chunks(blocks, max_chars=config.max_chars)
-    _log(verbose, f"✂️  Split into {len(chunks)} chunk(s).")
+    steps = prepare_narration_steps(blocks, max_chars=config.max_chars)
+    chunk_count = sum(1 for step in steps if step.kind == "text")
+    _log(verbose, f"✂️  Split into {chunk_count} chunk(s).")
 
     if config.rewrite_with_ollama:
         rewrite_options = OllamaRewriteOptions(
@@ -67,9 +79,12 @@ def synthesize_markdown_file(
             system_prompt=config.ollama_system_prompt,
         )
         _log(verbose, f"🤖 Rewriting chunks with Ollama ({config.ollama_model})...")
-        chunks = [
-            TextChunk(index=chunk.index, text=rewrite_text_for_speech(chunk.text, rewrite_options))
-            for chunk in tqdm(chunks, desc="Rewriting", unit="chunk", disable=not verbose)
+        steps = [
+            NarrationStep(
+                kind=step.kind,
+                text=rewrite_text_for_speech(step.text, rewrite_options) if step.kind == "text" else step.text,
+            )
+            for step in tqdm(steps, desc="Rewriting", unit="chunk", disable=not verbose)
         ]
 
     _log(verbose, f"🔊 Loading Kokoro model ({config.voice})...")
@@ -84,8 +99,37 @@ def synthesize_markdown_file(
     )
 
     audio_chunks: list[PcmAudio] = []
-    for chunk in tqdm(chunks, desc="Synthesizing", unit="chunk", disable=not verbose):
-        audio_chunks.append(runtime_synthesizer.synthesize(chunk.text))
+    pending_leading_pause_seconds = 0.0
+    for step in tqdm(steps, desc="Synthesizing", unit="chunk", disable=not verbose):
+        if step.kind == "pause":
+            if config.image_pause_seconds <= 0:
+                continue
+            if audio_chunks:
+                reference_audio = audio_chunks[-1]
+                audio_chunks.append(
+                    silence_audio(
+                        sample_rate=reference_audio.sample_rate,
+                        channels=reference_audio.channels,
+                        sample_width=reference_audio.sample_width,
+                        duration_seconds=config.image_pause_seconds,
+                    )
+                )
+            else:
+                pending_leading_pause_seconds += config.image_pause_seconds
+            continue
+
+        synthesized_audio = runtime_synthesizer.synthesize(step.text)
+        if pending_leading_pause_seconds > 0:
+            audio_chunks.append(
+                silence_audio(
+                    sample_rate=synthesized_audio.sample_rate,
+                    channels=synthesized_audio.channels,
+                    sample_width=synthesized_audio.sample_width,
+                    duration_seconds=pending_leading_pause_seconds,
+                )
+            )
+            pending_leading_pause_seconds = 0.0
+        audio_chunks.append(synthesized_audio)
 
     _log(verbose, "🔗 Merging audio...")
     merged_audio = concatenate_audio(audio_chunks)
@@ -96,7 +140,7 @@ def synthesize_markdown_file(
 
     return GenerationResult(
         output_path=output_path,
-        chunk_count=len(chunks),
+        chunk_count=chunk_count,
         duration_seconds=merged_audio.duration_seconds,
     )
 
@@ -117,6 +161,8 @@ def validate_config(config: AppConfig) -> None:
         raise ValidationError("code_block_behavior must be either 'skip' or 'read'.")
     if config.speed <= 0:
         raise ValidationError("speed must be greater than zero.")
+    if config.image_pause_seconds < 0:
+        raise ValidationError("image_pause_seconds must be greater than or equal to zero.")
 
 
 def resolve_output_path(input_path: Path, output_path: Path | None) -> Path:
@@ -129,3 +175,31 @@ def resolve_output_path(input_path: Path, output_path: Path | None) -> Path:
     if output_path.suffix.lower() not in {".wav", ".mp3"}:
         raise ValidationError("Output path must end with .wav or .mp3, or point to an existing directory.")
     return output_path
+
+
+def prepare_narration_steps(blocks: list[str], *, max_chars: int) -> list[NarrationStep]:
+    steps: list[NarrationStep] = []
+    pending_text_blocks: list[str] = []
+
+    def flush_pending_text() -> None:
+        if not pending_text_blocks:
+            return
+        text_chunks = prepare_text_chunks(pending_text_blocks, max_chars=max_chars)
+        steps.extend(NarrationStep(kind="text", text=chunk.text) for chunk in text_chunks)
+        pending_text_blocks.clear()
+
+    for block in blocks:
+        fragments = block.split(IMAGE_PAUSE_MARKER)
+        for index, fragment in enumerate(fragments):
+            if fragment.strip():
+                pending_text_blocks.append(fragment)
+            if index < len(fragments) - 1:
+                flush_pending_text()
+                steps.append(NarrationStep(kind="pause"))
+
+    flush_pending_text()
+
+    if not any(step.kind == "text" for step in steps):
+        raise ValidationError("The markdown file did not produce any readable content.")
+
+    return steps
