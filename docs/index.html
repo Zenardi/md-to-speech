@@ -37,29 +37,67 @@
         overflow-x: auto;
         background: rgba(127, 127, 127, 0.12);
       }
+
+      section {
+        margin-top: 2rem;
+      }
+
+      h2,
+      h3 {
+        line-height: 1.25;
+      }
     </style>
   </head>
   <body>
     <main>
       <h1>md-to-speech audio demo</h1>
-      <p>
-        This page is meant to be published with GitHub Pages. Generate your audio into
-        <code>docs/course.mp3</code>, then enable Pages for the <code>/docs</code> folder.
-      </p>
 
       <audio class="player" controls preload="metadata">
         <source src="course.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
       </audio>
 
-      <p>Recommended command:</p>
+      <p>Converted Test:</p>
+      <section aria-labelledby="summary-title">
+        <h2 id="summary-title">Summary</h2>
+        <p><strong>Complex-YOLO: A Deep Learning Approach for Object Detection</strong></p>
+        <p>
+          This page provides an overview of the key concepts and techniques introduced in
+          the Udacity lesson on Complex-YOLO, a deep learning approach for object
+          detection.
+        </p>
 
-      <pre><code>md-to-speech course.md --output docs/course.mp3 --offline</code></pre>
+        <h3>Key Concepts</h3>
+        <ul>
+          <li>
+            <strong>Object Detection</strong>: The process of identifying and locating
+            objects within a 3D point cloud using deep learning approaches.
+          </li>
+          <li>
+            <strong>Point Cloud Transformation</strong>: Three methods to feed data to the
+            input layer of a network:
+            <ul>
+              <li>Using point load directly</li>
+              <li>Transforming into volumetric shapes (voxels or pillars)</li>
+              <li>Compacting 3D point cloud into 2D projection along a specific axis</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Complex-YOLO</strong>: A variant of the YOLO framework that is fast and
+            suitable for real-time applications.
+          </li>
+          <li>
+            <strong>Bird's-Eye-View (BEV) Map</strong>: A 2D representation of a 3D point
+            cloud, used as input to the YOLO network.
+          </li>
+        </ul>
+      </section>
 
       <p>
-        After GitHub Pages is enabled, this player will be available at
-        <code>https://YOUR_GITHUB_USERNAME.github.io/md-to-speech/</code>.
+        GitHub project available at
+        <code>https://github.com/Zenardi/md-to-speech</code>.
       </p>
+      
     </main>
   </body>
   </html>
