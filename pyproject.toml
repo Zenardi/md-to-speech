@@ -7,7 +7,7 @@ name = "md-to-speech"
 version = "0.1.0"
 description = "Convert markdown course content into speech with Kokoro TTS."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "kokoro>=0.9.4",
     "lameenc>=1.7.0",

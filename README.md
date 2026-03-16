@@ -15,29 +15,58 @@
 
 ## Requirements
 
-- Python `3.11+`
+- Python `3.11` or `3.12`
 - A working local Kokoro setup via the `kokoro` Python package
-- `espeak-ng` installed on the machine
+- For local Linux installs, `espeak-ng` available on the machine
 
-On macOS:
+> Python `3.13` is not currently supported by the pinned `kokoro==0.9.4` dependency in `requirements.txt`.
+
+## Local install on Ubuntu
+
+Install the system packages first.
+
+For Ubuntu 24.04, this is usually:
+
+```bash
+sudo apt update
+sudo apt install -y python3.12 python3.12-venv espeak-ng
+```
+
+Then create a virtual environment and install the project:
+
+```bash
+python3.12 --version
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+python -m pip install -r requirements.txt
+python -m pip install -e .
+```
+
+Quick smoke check:
+
+```bash
+md-to-speech --help
+```
+
+> If your Ubuntu image does not provide Python `3.12`, use Python `3.11` instead and create the virtual environment with `python3.11 -m venv .venv`.
+
+## Local install on macOS
 
 ```bash
 brew install espeak-ng
-```
-
-Install the project:
-
-```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -U pip
-pip install -r requirements.txt
-pip install -e .
+python -m pip install -U pip
+python -m pip install -r requirements.txt
+python -m pip install -e .
 ```
 
 ## Docker
 
 The included `Dockerfile` uses a two-stage build on top of a [Chainguard `wolfi-base`](https://images.chainguard.dev/directory/image/wolfi-base/overview) image — minimal, rootless, and security-hardened.
+
+The Docker setup is slightly different from a local Ubuntu install: the image relies on the `espeakng-loader` Python package for Linux shared-library support, so it does not install the `espeak-ng` system package separately.
 
 **Build the image:**
 
@@ -296,5 +325,6 @@ Requires `pip install misaki[zh]`.
 ## Run tests
 
 ```bash
-PYTHONPATH=src python3 -m unittest discover -s tests -v
+source .venv/bin/activate
+PYTHONPATH=src python -m unittest discover -s tests -v
 ```
